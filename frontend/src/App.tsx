@@ -1,41 +1,113 @@
 import { useEffect, useState } from 'react'
+import type { FormEvent } from 'react'
+import { createTodo, deleteTodo, listTodos, updateTodo } from './api/todos'
 import type { TodoItem } from './types'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
 export function App() {
   const [items, setItems] = useState<TodoItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [mutationError, setMutationError] = useState<string | null>(null)
+  const [newTitle, setNewTitle] = useState('')
 
   useEffect(() => {
-    void fetch(`${API_BASE_URL}/api/todos`)
-      .then(async (res) => {
-        if (!res.ok) {
-          throw new Error(`request failed: ${res.status}`)
-        }
-        return (await res.json()) as TodoItem[]
-      })
-      .then((data) => {
-        setItems(data)
-      })
-      .catch(() => {
-        setError('TODO一覧の取得に失敗しました')
-      })
-      .finally(() => {
-        setLoading(false)
-      })
+    void loadTodos()
   }, [])
+
+  async function loadTodos() {
+    setLoading(true)
+    try {
+      const data = await listTodos()
+      setItems(data)
+      setLoadError(null)
+    } catch {
+      setLoadError('TODO一覧の取得に失敗しました')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleCreate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    const title = newTitle.trim()
+    if (title.length === 0) {
+      setMutationError('TODOタイトルを入力してください')
+      return
+    }
+
+    try {
+      const created = await createTodo({ title })
+      setItems((prevItems) => [...prevItems, created])
+      setNewTitle('')
+      setMutationError(null)
+    } catch {
+      setMutationError('TODOの追加に失敗しました')
+    }
+  }
+
+  async function handleToggle(item: TodoItem) {
+    try {
+      const updated = await updateTodo(item.id, { completed: !item.completed })
+      setItems((prevItems) =>
+        prevItems.map((currentItem) =>
+          currentItem.id === item.id ? updated : currentItem,
+        ),
+      )
+      setMutationError(null)
+    } catch {
+      setMutationError('TODOの更新に失敗しました')
+    }
+  }
+
+  async function handleDelete(id: number) {
+    try {
+      await deleteTodo(id)
+      setItems((prevItems) =>
+        prevItems.filter((currentItem) => currentItem.id !== id),
+      )
+      setMutationError(null)
+    } catch {
+      setMutationError('TODOの削除に失敗しました')
+    }
+  }
 
   return (
     <main className="container">
       <h1>TODO List</h1>
+
+      <form aria-label="todo-create-form" onSubmit={(event) => void handleCreate(event)}>
+        <input
+          aria-label="todo-title-input"
+          value={newTitle}
+          onChange={(event) => setNewTitle(event.target.value)}
+          placeholder="Add a task"
+        />
+        <button type="submit">Add</button>
+      </form>
+
       {loading && <p>Loading...</p>}
-      {error && <p role="alert">{error}</p>}
-      {!loading && !error && (
+      {loadError && <p role="alert">{loadError}</p>}
+      {mutationError && <p role="alert">{mutationError}</p>}
+      {!loading && !loadError && (
         <ul aria-label="todo-list">
           {items.map((item) => (
-            <li key={item.id}>{item.title}</li>
+            <li key={item.id} className="todo-row">
+              <label>
+                <input
+                  aria-label={`toggle-${item.id}`}
+                  type="checkbox"
+                  checked={item.completed}
+                  onChange={() => void handleToggle(item)}
+                />
+                <span className={item.completed ? 'todo-completed' : ''}>
+                  {item.title}
+                </span>
+              </label>
+              <button type="button" onClick={() => void handleDelete(item.id)}>
+                Delete
+              </button>
+            </li>
           ))}
         </ul>
       )}

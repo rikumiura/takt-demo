@@ -37,6 +37,9 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/todos", handler.ListTodos)
+	mux.HandleFunc("POST /api/todos", handler.CreateTodo)
+	mux.HandleFunc("PATCH /api/todos/{id}", handler.UpdateTodo)
+	mux.HandleFunc("DELETE /api/todos/{id}", handler.DeleteTodo)
 
 	server := &http.Server{
 		Addr:    *addr,
@@ -52,7 +55,7 @@ func main() {
 func withCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
 		if r.Method == http.MethodOptions {

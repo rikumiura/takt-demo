@@ -1,12 +1,19 @@
 # Go
 backend/todo.db
 backend/todo.e2e.db
+backend/.gocache/
+backend/backend/
 
 # Node
 frontend/node_modules
 frontend/dist
 frontend/playwright-report
 frontend/test-results
+frontend/*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
+frontend/playwright.config.js
+frontend/playwright.config.d.ts
 
 # OS
 .DS_Store
