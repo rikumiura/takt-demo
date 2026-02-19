@@ -1,0 +1,12 @@
+# Go
+backend/todo.db
+backend/todo.e2e.db
+
+# Node
+frontend/node_modules
+frontend/dist
+frontend/playwright-report
+frontend/test-results
+
+# OS
+.DS_Store
