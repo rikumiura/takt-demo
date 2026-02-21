@@ -69,12 +69,13 @@ func TestRepositoryCreate(t *testing.T) {
 	}
 }
 
-func TestRepositoryUpdateCompleted(t *testing.T) {
+func TestRepositoryUpdate_CompletedOnly(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
 
 	repo := NewRepository(db)
-	item, err := repo.UpdateCompleted(1, true)
+	completed := true
+	item, err := repo.Update(1, nil, &completed)
 	if err != nil {
 		t.Fatalf("update completed: %v", err)
 	}
@@ -84,14 +85,59 @@ func TestRepositoryUpdateCompleted(t *testing.T) {
 	}
 }
 
-func TestRepositoryUpdateCompleted_NotFound(t *testing.T) {
+func TestRepositoryUpdate_TitleOnly(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
 
 	repo := NewRepository(db)
-	_, err := repo.UpdateCompleted(999, true)
+	title := "Updated title"
+	item, err := repo.Update(1, &title, nil)
+	if err != nil {
+		t.Fatalf("update title: %v", err)
+	}
+
+	if item.ID != 1 || item.Title != "Updated title" || item.Completed {
+		t.Fatalf("unexpected updated item: %#v", item)
+	}
+}
+
+func TestRepositoryUpdate_TitleAndCompleted(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+
+	repo := NewRepository(db)
+	title := "Updated title"
+	completed := true
+	item, err := repo.Update(1, &title, &completed)
+	if err != nil {
+		t.Fatalf("update title and completed: %v", err)
+	}
+
+	if item.ID != 1 || item.Title != "Updated title" || !item.Completed {
+		t.Fatalf("unexpected updated item: %#v", item)
+	}
+}
+
+func TestRepositoryUpdate_NotFound(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+
+	repo := NewRepository(db)
+	completed := true
+	_, err := repo.Update(999, nil, &completed)
 	if !errors.Is(err, ErrNotFound) {
 		t.Fatalf("expected ErrNotFound, got %v", err)
+	}
+}
+
+func TestRepositoryUpdate_RequiresAtLeastOneField(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+
+	repo := NewRepository(db)
+	_, err := repo.Update(1, nil, nil)
+	if err == nil {
+		t.Fatal("expected error, got nil")
 	}
 }
 

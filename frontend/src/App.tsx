@@ -9,6 +9,8 @@ export function App() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [mutationError, setMutationError] = useState<string | null>(null)
   const [newTitle, setNewTitle] = useState('')
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editingTitle, setEditingTitle] = useState('')
 
   useEffect(() => {
     void loadTodos()
@@ -60,12 +62,49 @@ export function App() {
     }
   }
 
+  function startEditing(item: TodoItem) {
+    setEditingId(item.id)
+    setEditingTitle(item.title)
+    setMutationError(null)
+  }
+
+  function cancelEditing() {
+    setEditingId(null)
+    setEditingTitle('')
+  }
+
+  async function handleSaveEdit(id: number) {
+    const title = editingTitle.trim()
+    if (title.length === 0) {
+      setMutationError('TODOタイトルを入力してください')
+      return
+    }
+
+    try {
+      const updated = await updateTodo(id, { title })
+      setItems((prevItems) =>
+        prevItems.map((currentItem) =>
+          currentItem.id === id ? updated : currentItem,
+        ),
+      )
+      setEditingId(null)
+      setEditingTitle('')
+      setMutationError(null)
+    } catch {
+      setMutationError('TODOの更新に失敗しました')
+    }
+  }
+
   async function handleDelete(id: number) {
     try {
       await deleteTodo(id)
       setItems((prevItems) =>
         prevItems.filter((currentItem) => currentItem.id !== id),
       )
+      if (editingId === id) {
+        setEditingId(null)
+        setEditingTitle('')
+      }
       setMutationError(null)
     } catch {
       setMutationError('TODOの削除に失敗しました')
@@ -91,24 +130,57 @@ export function App() {
       {mutationError && <p role="alert">{mutationError}</p>}
       {!loading && !loadError && (
         <ul aria-label="todo-list">
-          {items.map((item) => (
-            <li key={item.id} className="todo-row">
-              <label>
-                <input
-                  aria-label={`toggle-${item.id}`}
-                  type="checkbox"
-                  checked={item.completed}
-                  onChange={() => void handleToggle(item)}
-                />
-                <span className={item.completed ? 'todo-completed' : ''}>
-                  {item.title}
-                </span>
-              </label>
-              <button type="button" onClick={() => void handleDelete(item.id)}>
-                Delete
-              </button>
-            </li>
-          ))}
+          {items.map((item) => {
+            const isEditing = editingId === item.id
+            return (
+              <li key={item.id} className="todo-row">
+                {isEditing ? (
+                  <input
+                    aria-label={`edit-title-input-${item.id}`}
+                    value={editingTitle}
+                    onChange={(event) => setEditingTitle(event.target.value)}
+                  />
+                ) : (
+                  <label>
+                    <input
+                      aria-label={`toggle-${item.id}`}
+                      type="checkbox"
+                      checked={item.completed}
+                      onChange={() => void handleToggle(item)}
+                    />
+                    <span className={item.completed ? 'todo-completed' : ''}>
+                      {item.title}
+                    </span>
+                  </label>
+                )}
+                {isEditing ? (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => void handleSaveEdit(item.id)}
+                    >
+                      Save
+                    </button>
+                    <button type="button" onClick={cancelEditing}>
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <button type="button" onClick={() => startEditing(item)}>
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleDelete(item.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
     </main>

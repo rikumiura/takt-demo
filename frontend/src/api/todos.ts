@@ -5,7 +5,11 @@ type TodoCreateInput = {
 }
 
 type TodoUpdateInput = {
+  title: string
+  completed?: boolean
+} | {
   completed: boolean
+  title?: string
 }
 
 function getApiBaseURL(): string {

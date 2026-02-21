@@ -52,8 +52,30 @@ func (r *Repository) Create(title string) (Item, error) {
 	}, nil
 }
 
-func (r *Repository) UpdateCompleted(id int64, completed bool) (Item, error) {
-	result, err := r.db.Exec(`UPDATE todos SET completed = ? WHERE id = ?`, completed, id)
+func (r *Repository) Update(id int64, title *string, completed *bool) (Item, error) {
+	if title == nil && completed == nil {
+		return Item{}, errors.New("title or completed is required")
+	}
+
+	var (
+		result sql.Result
+		err    error
+	)
+
+	switch {
+	case title != nil && completed != nil:
+		result, err = r.db.Exec(
+			`UPDATE todos SET title = ?, completed = ? WHERE id = ?`,
+			*title,
+			*completed,
+			id,
+		)
+	case title != nil:
+		result, err = r.db.Exec(`UPDATE todos SET title = ? WHERE id = ?`, *title, id)
+	default:
+		result, err = r.db.Exec(`UPDATE todos SET completed = ? WHERE id = ?`, *completed, id)
+	}
+
 	if err != nil {
 		return Item{}, err
 	}

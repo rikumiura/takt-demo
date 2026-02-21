@@ -89,6 +89,28 @@ describe('todo api', () => {
     )
   })
 
+  it('updates todo title', async () => {
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        createJSONResponse(200, { id: 2, title: 'Updated docs', completed: false }),
+      )
+
+    const todo = await updateTodo(2, { title: 'Updated docs' })
+
+    expect(todo).toEqual({ id: 2, title: 'Updated docs', completed: false })
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      'http://localhost:8080/api/todos/2',
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ title: 'Updated docs' }),
+      },
+    )
+  })
+
   it('deletes todo', async () => {
     globalThis.fetch = vi.fn().mockResolvedValueOnce(createStatusResponse(204))
 

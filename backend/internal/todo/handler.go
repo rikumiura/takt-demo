@@ -12,7 +12,7 @@ import (
 type ReaderWriter interface {
 	List() ([]Item, error)
 	Create(title string) (Item, error)
-	UpdateCompleted(id int64, completed bool) (Item, error)
+	Update(id int64, title *string, completed *bool) (Item, error)
 	Delete(id int64) error
 }
 
@@ -70,7 +70,8 @@ func (h *Handler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 }
 
 type updateTodoRequest struct {
-	Completed *bool `json:"completed"`
+	Title     *string `json:"title"`
+	Completed *bool   `json:"completed"`
 }
 
 func (h *Handler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
@@ -85,12 +86,22 @@ func (h *Handler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
-	if req.Completed == nil {
-		http.Error(w, "completed is required", http.StatusBadRequest)
+	if req.Title == nil && req.Completed == nil {
+		http.Error(w, "title or completed is required", http.StatusBadRequest)
 		return
 	}
 
-	item, err := h.repo.UpdateCompleted(id, *req.Completed)
+	var title *string
+	if req.Title != nil {
+		trimmedTitle := strings.TrimSpace(*req.Title)
+		if trimmedTitle == "" {
+			http.Error(w, "title is required", http.StatusBadRequest)
+			return
+		}
+		title = &trimmedTitle
+	}
+
+	item, err := h.repo.Update(id, title, req.Completed)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
 			http.Error(w, "todo not found", http.StatusNotFound)
@@ -126,7 +137,7 @@ func (h *Handler) DeleteTodo(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func decodeJSON(r *http.Request, target any) error {
+func decodeJSON(r *http.Request, target interface{}) error {
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(target); err != nil {

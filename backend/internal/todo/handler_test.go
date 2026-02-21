@@ -20,7 +20,8 @@ type fakeRepo struct {
 	updateItem      Item
 	updateErr       error
 	updateID        int64
-	updateCompleted bool
+	updateTitle     *string
+	updateCompleted *bool
 
 	deleteErr error
 	deleteID  int64
@@ -41,8 +42,9 @@ func (f *fakeRepo) Create(title string) (Item, error) {
 	return f.createItem, nil
 }
 
-func (f *fakeRepo) UpdateCompleted(id int64, completed bool) (Item, error) {
+func (f *fakeRepo) Update(id int64, title *string, completed *bool) (Item, error) {
 	f.updateID = id
+	f.updateTitle = title
 	f.updateCompleted = completed
 	if f.updateErr != nil {
 		return Item{}, f.updateErr
@@ -158,7 +160,7 @@ func TestCreateTodo_Error(t *testing.T) {
 	}
 }
 
-func TestUpdateTodo_Success(t *testing.T) {
+func TestUpdateTodo_SuccessWithCompleted(t *testing.T) {
 	repo := &fakeRepo{
 		updateItem: Item{ID: 2, Title: "updated", Completed: true},
 	}
@@ -173,8 +175,14 @@ func TestUpdateTodo_Success(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", rr.Code)
 	}
-	if repo.updateID != 2 || !repo.updateCompleted {
-		t.Fatalf("expected update args (2, true), got (%d, %v)", repo.updateID, repo.updateCompleted)
+	if repo.updateID != 2 {
+		t.Fatalf("expected update id 2, got %d", repo.updateID)
+	}
+	if repo.updateTitle != nil {
+		t.Fatalf("expected title to be nil, got %q", *repo.updateTitle)
+	}
+	if repo.updateCompleted == nil || !*repo.updateCompleted {
+		t.Fatalf("expected completed to be true, got %#v", repo.updateCompleted)
 	}
 
 	var body Item
@@ -183,6 +191,32 @@ func TestUpdateTodo_Success(t *testing.T) {
 	}
 	if body.ID != 2 || body.Title != "updated" || !body.Completed {
 		t.Fatalf("unexpected response body: %#v", body)
+	}
+}
+
+func TestUpdateTodo_SuccessWithTitle(t *testing.T) {
+	repo := &fakeRepo{
+		updateItem: Item{ID: 2, Title: "updated title", Completed: false},
+	}
+	h := NewHandler(repo)
+
+	req := httptest.NewRequest(http.MethodPatch, "/api/todos/2", strings.NewReader(`{"title":"  updated title  "}`))
+	req.SetPathValue("id", "2")
+	rr := httptest.NewRecorder()
+
+	h.UpdateTodo(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rr.Code)
+	}
+	if repo.updateID != 2 {
+		t.Fatalf("expected update id 2, got %d", repo.updateID)
+	}
+	if repo.updateTitle == nil || *repo.updateTitle != "updated title" {
+		t.Fatalf("expected title to be %q, got %#v", "updated title", repo.updateTitle)
+	}
+	if repo.updateCompleted != nil {
+		t.Fatalf("expected completed to be nil, got %#v", repo.updateCompleted)
 	}
 }
 
@@ -216,11 +250,26 @@ func TestUpdateTodo_InvalidJSON(t *testing.T) {
 	}
 }
 
-func TestUpdateTodo_MissingCompleted(t *testing.T) {
+func TestUpdateTodo_MissingUpdateFields(t *testing.T) {
 	repo := &fakeRepo{}
 	h := NewHandler(repo)
 
-	req := httptest.NewRequest(http.MethodPatch, "/api/todos/1", strings.NewReader(`{"title":"nope"}`))
+	req := httptest.NewRequest(http.MethodPatch, "/api/todos/1", strings.NewReader(`{}`))
+	req.SetPathValue("id", "1")
+	rr := httptest.NewRecorder()
+
+	h.UpdateTodo(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", rr.Code)
+	}
+}
+
+func TestUpdateTodo_EmptyTitle(t *testing.T) {
+	repo := &fakeRepo{}
+	h := NewHandler(repo)
+
+	req := httptest.NewRequest(http.MethodPatch, "/api/todos/1", strings.NewReader(`{"title":"   "}`))
 	req.SetPathValue("id", "1")
 	rr := httptest.NewRecorder()
 

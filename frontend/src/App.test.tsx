@@ -132,6 +132,99 @@ describe('App', () => {
     },
   )
 
+  it('edits a todo title', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        createJSONResponse(200, [{ id: 1, title: 'Write tests', completed: false }]),
+      )
+      .mockResolvedValueOnce(
+        createJSONResponse(200, { id: 1, title: 'Write more tests', completed: false }),
+      )
+    globalThis.fetch = fetchMock
+
+    render(<App />)
+
+    await screen.findByText('Write tests')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    fireEvent.change(screen.getByLabelText('edit-title-input-1'), {
+      target: { value: 'Write more tests' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('Write more tests')).toBeInTheDocument()
+    })
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'http://localhost:8080/api/todos/1',
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ title: 'Write more tests' }),
+      },
+    )
+  })
+
+  it.each([
+    { caseName: 'empty input', title: '' },
+    { caseName: 'whitespace input', title: '   ' },
+  ])(
+    'shows validation error and does not send edit request for $caseName',
+    async ({ title }) => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(
+          createJSONResponse(200, [{ id: 1, title: 'Write tests', completed: false }]),
+        )
+      globalThis.fetch = fetchMock
+
+      render(<App />)
+
+      await screen.findByText('Write tests')
+
+      fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+      fireEvent.change(screen.getByLabelText('edit-title-input-1'), {
+        target: { value: title },
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+      await waitFor(() => {
+        expect(screen.getByRole('alert')).toHaveTextContent(
+          'TODOタイトルを入力してください',
+        )
+      })
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+    },
+  )
+
+  it('cancels editing', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        createJSONResponse(200, [{ id: 1, title: 'Write tests', completed: false }]),
+      )
+    globalThis.fetch = fetchMock
+
+    render(<App />)
+
+    await screen.findByText('Write tests')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    fireEvent.change(screen.getByLabelText('edit-title-input-1'), {
+      target: { value: 'Write more tests' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    expect(screen.getByText('Write tests')).toBeInTheDocument()
+    expect(screen.queryByText('Write more tests')).not.toBeInTheDocument()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
   it('toggles todo completion', async () => {
     const fetchMock = vi
       .fn()
