@@ -1,0 +1,121 @@
+tasks:
+  - worktree: true
+    branch: takt/20260219T1427-fyeezuni-rimasu-ha-de-shimasu
+    piece: default
+    auto_pr: true
+    name: fyeezuni-rimasu-ha-de-shimasu
+    status: completed
+    slug: fyeezuni-rimasu-ha-de-shimasu
+    worktree_path: /Users/kuribo/Documents/practice/takt-worktree/20260219T1427-fyeezuni-rimasu-ha-de-shimasu
+    content: |-
+      実行フェーズに入ります。進行順は以下で固定します。
+
+      1. `Task-01 (P0)` フロントエンドのビルド復旧
+      完了条件: `frontend` で `npm run build` と `npm test` が成功
+      2. `Task-02 (P1)` TODOのCRUD実装
+      完了条件: UIでCRUD動作、`backend/frontend/e2e` テスト成功
+      3. `Task-03 (P2)` CORS拡張と失敗系テスト強化
+      完了条件: Preflight含むCRUD通信成功、主要失敗系テスト成功
+    created_at: 2026-02-19T14:27:51.922Z
+    started_at: 2026-02-19T14:27:51.933Z
+    completed_at: 2026-02-19T15:36:19.478Z
+    owner_pid: null
+  - worktree: true
+    branch: takt/20260221T1401-tasuku-tasuku-todoapurini-tasu
+    piece: default
+    auto_pr: true
+    name: tasuku-tasuku-todoapurini-tasu
+    status: completed
+    slug: tasuku-tasuku-todoapurini-tasu
+    worktree_path: /Users/kuribo/Documents/practice/takt-worktree/20260221T1401-tasuku-tasuku-todoapurini-tasu
+    content: >-
+      # タスク指示書
+
+
+      ## タスク
+
+      TODOアプリに「タスクの編集・削除・完了切替」を実装し、永続化とテストまで完了させる。
+
+
+      ## 参照資料
+
+      - なし（実装コードをソース・オブ・トゥルースとして調査すること）
+
+
+      ## 優先度付き作業（対象ファイル/モジュール別）
+
+      | 優先度 | 対象ファイル/モジュール | 作業内容 |
+
+      |---|---|---|
+
+      | 高 | タスク型定義モジュール（例: `Task` 型/スキーマ定義） |
+      編集・削除・完了切替に必要な型を確認し、不足があれば最小変更で更新する。 |
+
+      | 高 | タスク状態管理モジュール（例: store/reducer/usecase/service） |
+      `updateTask`、`deleteTask`、`toggleTaskCompletion`
+      相当の処理を実装する。ID不在時の扱いも既存方針に合わせて実装する。 |
+
+      | 高 | タスク一覧/タスク項目UIモジュール（例: `TaskList`/`TaskItem`） |
+      各タスクに「編集」「削除」「完了切替」操作を追加し、状態管理層に接続する。 |
+
+      | 高 | 永続化モジュール（例: `localStorage`/repository/api client） |
+      上記3操作の結果が保存されるようにし、再読み込み後も状態が一致するようにする。 |
+
+      | 中 | 入力バリデーション・UI制御モジュール | 既存ルールに合わせて編集時の入力制約（空文字等）を適用する。 |
+
+      | 高 | 単体テストモジュール（状態管理・永続化） | 編集・削除・完了切替の正常系と主要境界ケース（存在しないIDなど）を追加/更新する。 |
+
+      | 中 | UIテストモジュール（存在する場合） | ユーザー操作で編集・削除・完了切替できること、表示が更新されることをテストする。 |
+
+      | 低 | 変更で未使用になったコード | 今回の変更で新たに未使用になったコードのみ削除する。 |
+
+
+      ## 実装要件
+
+      - 実装対象は「編集」「削除」「完了切替」の3機能。
+
+      - 既存のタスク作成・一覧表示を壊さないこと。
+
+      - 調査のみで終わらせず、実装・テスト実行まで行うこと。
+
+
+      ## 受け入れ条件
+
+      - 任意タスクの内容を編集して保存できる。
+
+      - 任意タスクを削除でき、再読み込み後も復活しない。
+
+      - 任意タスクの完了/未完了を切替でき、再読み込み後も状態が維持される。
+
+      - 追加/更新したテストがすべて成功する。
+
+
+      ## 確認手順（再現・検証）
+
+      1. アプリを起動し、タスクを2件以上作成する。  
+
+      2. 1件を編集して保存し、一覧表示に反映されることを確認する。  
+
+      3. 1件の完了状態を切り替え、表示変化を確認する。  
+
+      4. 1件を削除し、一覧から消えることを確認する。  
+
+      5. ページを再読み込みし、編集内容・完了状態・削除結果が保持されていることを確認する。  
+
+      6. プロジェクト規約のテストコマンドを実行し、成功を確認する。  
+
+
+      ## Open Questions
+
+      - 編集UIはインライン編集か、別UI（モーダル等）か。  
+
+      - 削除時に確認ダイアログを出すか。  
+
+      - 完了タスクの見た目（取り消し線のみ/追加表示あり）の最終仕様。  
+
+
+      （未回答の場合は、既存UI/既存実装パターンに合わせて一貫性優先で実装すること。）
+    created_at: 2026-02-21T14:01:59.413Z
+    started_at: 2026-02-21T14:01:59.422Z
+    completed_at: 2026-02-21T14:51:16.600Z
+    owner_pid: null
